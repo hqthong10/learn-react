@@ -1,78 +1,56 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import './App.css'
+import useSWR from "swr";
+import { useSelector, useDispatch } from "react-redux";
+import { increment, decrement, incrementByAmount } from "./store/counterSlice";
 
-// Component con sử dụng React.memo
-const ChildComponent = React.memo(({ data }: { data: {value: number} }) => {
-  console.log("🔄 ChildComponent re-render!");
-  return <p>Count: {data.value}</p>;
-});
-
-const ChildClick = React.memo(({ onClick }: { onClick: () => void }) => {
-  console.log("🔄 Child re-render!");
-  return <button onClick={onClick}>Click me</button>;
-});
+import useCounterStore from "./store/zustand";
 
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 function App() {
-  const [count, setCount] = useState(0);
-  const [text, setText] = useState("");
-  const [list, setList] = useState<any[]>([]);
   const [words, setWords] = useState<any[]>([]);
-  const memoizedData = useMemo(() => ({ value: count }), [count]);
-  const memoizedOnClick = useCallback(() => console.log("Clicked!"), []);
+  const count = useSelector((state: any) => state.counter.value);
+  const dispatch = useDispatch();
+
+  const { count2, increment2, decrement2, reset2, incrementByAmount2 } = useCounterStore();
+
   
+  const { data } = useSWR("http://localhost:3020/w100", fetcher);
+  // if (data?.data) {
+  //   setWords(data?.data || []);
+  // }
 
   useEffect(() => {
-    setList([{ name: 'name-1' }]);
-
-    fetch('http://localhost:3020/w100',{method: 'get'})
-      .then((res) => res.json())
-      .then((data) => setWords(data.data || []));
-  }, [])
-
-  const addItem = () => {
-    // setList((list) => list.push({ name: `name-${list.length + 1}` }));
-    setList([ ...list, { name: `name-${list.length + 1}` }]);
-  }
-
-  const removeItem = (item: any) => {
-    // setList((list) => list.push({ name: `name-${list.length + 1}` }));
-    const _lis = list.filter((obj) => obj.name !== item.name);
-    setList(_lis);
-  }
-
-  const listEle = list.map((item: any) => {
-    return <p>{item.name} <button onClick={() => removeItem(item)}>remove</button></p>
-  })
+    // fetch('http://localhost:3020/w100',{method: 'get'})
+    //   .then((res) => res.json())
+    //   .then((data) => setWords(data.data || []));
+    if (data?.data) {
+      setWords(data?.data || []);
+    }
+  }, [data?.data])
 
   return (
     <>
       <div className="card">
-        <div className='list'>
-          {listEle}
-        </div>
 
+      <div>
+        <h2>Count: {count}</h2>
+        <button onClick={() => dispatch(increment())}>+1</button>
+        <button onClick={() => dispatch(decrement())}>-1</button>
+        <button onClick={() => dispatch(incrementByAmount(5))}>+5</button>
+      </div>
 
-        {words.length}
+      <div>
+        <h2>Count 2: {count2}</h2>
+        <button onClick={increment2}>+1</button>
+        <button onClick={decrement2}>-1</button>
+        <button onClick={reset2}>reset</button>
+        <button onClick={() => incrementByAmount2(5)}>+5</button>
+      </div>
 
-        <ChildComponent data={memoizedData} />
-
-        <ChildClick onClick={memoizedOnClick}/>
-        
-      <p>
-
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <button onClick={() => setText(text + "a")}>Update Text</button>
-      </p>
-
-        <button onClick={addItem}>
-          add
-        </button>
-        
       </div>
       
     </>
